@@ -1,0 +1,4 @@
+name = Diamond Custom Module
+description = "Module which helps to customize the functionality"
+package = Custom
+core = 7.x

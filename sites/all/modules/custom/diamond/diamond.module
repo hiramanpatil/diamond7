@@ -1,0 +1,31 @@
+<?php
+
+function diamond_init() {
+
+    global $base_url;
+    $url_1 = arg(0);
+    if (!user_is_logged_in()) {
+		
+	  if($url_1 != 'user') {
+		drupal_goto($base_url.'/user/login');	
+	  }
+    }
+}
+
+ /**
+    * Form Alter hook
+    */
+function diamond_form_alter(&$form, $form_state, $form_id) {
+
+    //echo $form_id;die;
+    if ($form_id == 'sale_node_form') {
+
+	unset($form['actions']['preview']);
+	unset($form['body']);
+    }
+    
+    if ($form_id == 'taxonomy_form_term') {
+	unset($form['description']);
+    }
+
+}
