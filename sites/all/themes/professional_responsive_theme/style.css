@@ -1598,7 +1598,7 @@ ol.search-results {
 	margin: 10px !important;
 }
 
-.node-sale-form label,
+.node-sale-form label, .node-vendor-form label, .node-driver-form label,
 #taxonomy-form-term label,
 .views-table th {
 	font-weight:900;
@@ -1623,16 +1623,24 @@ ol.search-results {
 
 #taxonomy-form-term #edit-submit,
 .node-sale-form #edit-submit,
+.node-vendor-form #edit-submit,
+.node-driver-form #edit-submit,
 #user-profile-form #edit-submit {
 	width:12% !important;
 }
 
-.node-sale-form select {
+#edit-delete {
+ width:12% !important; 
+}
+
+.node-vendor-form select,
+.node-driver-form select {
 	width:30%;
 	padding:12px;
 }
 
-.node-sale-form input {
+.node-vendor-form input,
+.node-driver-form input {
 	width:27%;
 	padding:12px;
 }
@@ -1662,4 +1670,26 @@ ol.search-results {
 
 .content-sidebar-wrap .tabs-wrapper {
   display: none;  
+}
+
+.node-sale-form input {
+  width:50%;
+  padding:12px;
+}
+
+.node-sale-form select {
+  width:55%;
+  padding:12px;
+}
+
+.node-sale-form .form-region-main {
+  width: 50% !important;
+}
+
+.node-sale-form .form-region-right {
+  width: 50% !important;
+}
+
+.views-table tr.odd td, tr.even td {
+  padding: 1.0em;
 }

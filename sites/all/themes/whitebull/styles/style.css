@@ -1,0 +1,218 @@
+/* Body ----------------------------------------*/
+
+body {
+  background: #e9e9e9;
+  color: #666666;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 85%;
+  line-height: 1.5em;
+  margin: 0;
+  padding: 0;
+}
+
+#page-wrapper {
+  float: left;
+  margin: 0 auto;
+  padding: 0;
+  width: 100%;
+}
+
+/* end od body -------------------------------------------*/
+
+
+/* Heading -----------------------------------------*/
+
+h1 {
+  font-size: 1.6em;
+}
+
+h2 {
+  font-size: 1.5em;
+}
+
+h3 {
+  font-size: 1.3em;
+}
+
+h4 {
+  font-size: 1.2em;
+}
+
+h5 {
+  font-size: 1.1em;
+}
+
+h6 {
+  font-size: 1em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: 1.2em;
+  margin: 0;
+  padding: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: normal;
+}
+
+/* end of heading----------------------------------------------*/
+
+
+/* Text ----------------------------------------------*/
+
+tr.odd td,
+tr.even td {
+  padding: 0.5em;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:link {
+  color: #6f8eca;
+  text-decoration: none;
+}
+
+a:visited {
+  color: #6f8eca;
+}
+
+a:hover {
+  color: #234c9b;
+}
+a.active {
+  color: #5d658e!important;
+}
+
+/*end of text---------------------------------------------------*/
+
+/* Sory, i dont give IE 6 stylesheets, :D if you want to create it then commit to whitebull project,thanks :D */
+
+/* Custom CSS */
+.views-table .odd .views-field,
+.views-table .even .views-field {
+  padding: 12px !important;
+  margin: 10px !important;
+}
+
+.node-sale-form label, .node-vendor-form label, .node-driver-form label,
+#taxonomy-form-term label,
+.views-table th {
+  font-weight:900;
+}
+
+.breadcrumb {
+  display:none;
+}
+
+#container .content-sidebar-wrap {
+  min-height:430px;
+}
+
+#taxonomy-form-term #edit-relations {
+  display:none;
+}
+
+#taxonomy-form-term input {
+  width:27%;
+  padding:12px;
+}
+
+#taxonomy-form-term #edit-submit,
+.node-sale-form #edit-submit,
+.node-vendor-form #edit-submit,
+.node-driver-form #edit-submit,
+#user-profile-form #edit-submit {
+  width:12% !important;
+}
+
+#edit-delete {
+ width:12% !important; 
+}
+
+.node-vendor-form select,
+.node-driver-form select {
+  width:30%;
+  padding:12px;
+}
+
+.node-vendor-form input,
+.node-driver-form input {
+  width:27%;
+  padding:12px;
+}
+
+#user-profile-form input,
+#user-profile-form #edit-pass-pass1,
+#user-profile-form #edit-pass-pass2 {
+  width:30%;
+  padding:12px;
+}
+
+#user-profile-form  #edit-timezone {
+  display:none;
+}
+
+#user-profile-form label {
+  font-weight:900;
+}
+
+.region-usermenus .content {
+  margin-top:16px;
+}
+
+.region-usermenus h2 {
+  display:none;
+}
+
+.content-sidebar-wrap .tabs-wrapper {
+  display: none;  
+}
+
+.node-sale-form input {
+  width:50%;
+  padding:12px;
+}
+
+.node-sale-form select {
+  width:55%;
+  padding:12px;
+}
+
+.node-sale-form .form-region-main {
+  width: 50% !important;
+}
+
+.node-sale-form .form-region-right {
+  width: 50% !important;
+}
+
+.views-table tr.odd td, tr.even td {
+  padding: 1.0em;
+}
+
+#main-content .tabs {
+  display: none;
+}
+
+.block-superfish .sf-menu {
+  line-height: 2;
+}
+
+#superfish .menu li a {
+  padding: 5px 20px;
+}
+
+#taxonomy-form-term select {
+  width:30%;
+  padding:12px;  
+}
