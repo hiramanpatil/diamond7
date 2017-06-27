@@ -17,15 +17,22 @@ function diamond_init() {
     */
 function diamond_form_alter(&$form, $form_state, $form_id) {
 
-    //echo $form_id;die;
+    if ($form_id == 'sale_node_form' || $form_id == 'vendor_node_form' || $form_id == 'driver_node_form') {
+
+	   unset($form['actions']['preview']);
+	   unset($form['body']);
+    }
+
+    // Disable sub total and grand total field on form
     if ($form_id == 'sale_node_form') {
 
-	unset($form['actions']['preview']);
-	unset($form['body']);
+        $form['field_sub_total']['#disabled'] = TRUE;
+        $form['field_grand_total']['#disabled'] = TRUE;
+
     }
     
     if ($form_id == 'taxonomy_form_term') {
-	unset($form['description']);
+	   unset($form['description']);
     }
 
 }
