@@ -212,7 +212,7 @@
                             
                     
                     <div id="main-content">
-                        
+                        <?php if ($title): ?><h1 class="page-title"><?php print $title; ?></h1><?php endif; ?>
                         <?php if ($page['content_top']): ?><div id="content-top"><?php print render($page['content_top']); ?></div><?php endif; ?>
                         <?php if ($show_messages): print $messages; endif;?>
                         <?php if ($tabs): ?><div class="tabs"><?php print render($tabs); ?></div><?php endif; ?>

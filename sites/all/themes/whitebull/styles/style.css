@@ -216,3 +216,13 @@ a.active {
   width:30%;
   padding:12px;  
 }
+
+#form-create-memo-form input {
+  width:50%;
+  padding:12px;
+}
+
+#form-create-memo-form select {
+  width:50%;
+  padding:12px;  
+}
