@@ -1,0 +1,416 @@
+<?php
+
+function diamond_init() {
+  
+  global $base_url;
+  $url_1 = arg(0);
+  if (!user_is_logged_in()) {
+    
+    if ($url_1 != 'user') {
+      drupal_goto($base_url . '/user/login');
+    }
+  }
+}
+
+/**
+ * Form Alter hook
+ */
+function diamond_form_alter(&$form, $form_state, $form_id) {
+  
+  if ($form_id == 'sale_node_form' || $form_id == 'vendor_node_form' || $form_id == 'driver_node_form') {
+    
+    unset($form['actions']['preview']);
+    unset($form['body']);
+  }
+  
+  // Disable sub total and grand total field on form
+  if ($form_id == 'sale_node_form') {
+    
+    $form['field_sub_total']['#disabled']   = TRUE;
+    $form['field_grand_total']['#disabled'] = TRUE;
+    
+  }
+  
+  if ($form_id == 'taxonomy_form_term') {
+    unset($form['description']);
+  }
+  
+}
+
+function diamond_menu() {
+  
+  $items = array();
+  
+  $items['create-memo/sale/%'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'Create Memo', //page title
+    'description' => 'A form to create memo.',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array(
+      'form_create_memo_form'
+    ), //put the name of the form here
+    'access callback' => TRUE
+  );
+
+  $items['print-memo/%'] = array(
+    'title' => 'Print',
+    'description' => 'Print Memo.',
+    'page callback' => 'print_memo',
+    'access callback' => TRUE
+  );  
+  
+  return $items;
+}
+
+function form_create_memo_form($form, &$form_state) {
+  
+  $node_id = arg(2);
+  $node = node_load($node_id);
+  //echo "<pre>"; print_r($node);die;
+
+  $company = taxonomy_term_load($node->field_company[LANGUAGE_NONE][0]['tid']);
+  $from = taxonomy_term_load($node->field_from[LANGUAGE_NONE][0]['tid']);
+  $vehicle = taxonomy_term_load($node->field_vehicle[LANGUAGE_NONE][0]['tid']);
+  //echo "<pre>"; print_r($company);die;
+
+  $date = explode(" ", $node->field_date[LANGUAGE_NONE][0]['value']);
+
+  $form['html'] = array(
+    '#type' => 'markup',
+    '#markup' => '<br />
+      <fieldset>
+        <legend><strong>Sale</strong></legend>
+        <table>
+          <tr>
+            <td width="50%"><strong>LR No:</strong> '.$node->title.'</td>
+            <td width="50%"><strong>LR Date:</strong> '.$date[0].'</td>
+          </tr>
+          <tr>
+            <td width="50%"><strong>From:</strong> '.$from->name.'</td>
+            <td width="50%"><strong>To:</strong> '.$node->field_to[LANGUAGE_NONE][0]['value'].'</td>
+          </tr>    
+          <tr>
+          <td width="50%"><strong>Company:</strong> '.$company->name.'</td>
+          <td width="50%"><strong>Vehicle No:</strong> '.$vehicle->name.'</td>          
+          </tr>                
+        </table>
+        
+      </fieldset>
+    ',
+  );
+
+  $form['sale_id'] = array(
+    '#type' => 'hidden',
+    '#title' => 'None',
+    '#value' => $node->nid,
+  );
+
+  $form['lr_number'] = array(
+    '#type' => 'hidden',
+    '#title' => 'None',
+    '#value' => $node->title. "- Memo",
+  );
+  // Load value from table1 for the 1st select field  
+  $select = db_select('node', 'n');
+  $select->fields('n', array(
+    'nid',
+    'title'
+  ));
+  $select->condition('n.type', "vendor", '=');
+  $results = $select->execute()->fetchAll();
+  
+  $option1 = array(
+    '' => 'Select Vendor'
+  );
+  foreach ($results as $result) {
+    $option1[$result->nid] = $result->title;
+  }
+  
+  //Default value for 1st select
+  $selected = isset($form_state['values']['vendor']) ? $form_state['values']['vendor'] : '';
+  
+  // 1st select field
+  $form['vendor'] = array(
+    '#type' => 'select',
+    '#title' => 'Vendor',
+    '#options' => $option1,
+    '#default_value' => $selected,
+    '#prefix' => '<div class="main-memo"><div class="memo-left" style="width:50%; float:left;">',
+    '#ajax' => array(
+      //Call function that rebuilt select2 field
+      'callback' => 'ajax_dropdown_callback',
+      'wrapper' => 'load-drivers'
+    )
+  );
+  
+  //2nd select field. Get rebuild each time select1 changes.
+  $form['driver'] = array(
+    '#type' => 'select',
+    '#title' => 'Driver',
+    '#options' => _driver_dropdown_options($selected),
+    '#default_value' => isset($form_state['values']['driver']) ? $form_state['values']['driver'] : '',
+    '#prefix' => '<div id="load-drivers">',
+    '#suffix' => '</div>',
+    
+    '#ajax' => array(
+      'callback' => 'ajax_dropdown_callback_contact',
+      'wrapper' => 'load-contact'
+    )
+  );
+  
+  $drivers = _driver_dropdown_options($selected);
+  
+  //Default value
+  $selected_d = isset($form_state['values']['driver']) ? $form_state['values']['driver'] : key($drivers);
+  
+  // Input field for contact no
+  $form['contact_no'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Contact No',
+    '#value' => _driver_contact_no($selected_d),
+    '#prefix' => '<div id="load-contact">',
+    '#suffix' => '</div>'
+  );
+
+  $form['freight'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Freight Amount',
+    '#value' => $node->field_amount[LANGUAGE_NONE][0]['value'],
+  );
+
+  $form['loading_detention_charge'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Loading Detention Charge',
+    '#value' => (isset($node->field_detention_charges[LANGUAGE_NONE][0]['value']) ? $node->field_detention_charges[LANGUAGE_NONE][0]['value'] : ''),
+    '#suffix' => '</div>'
+  );
+
+  $form['advance'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Advance',
+    '#prefix' => '<div class="memo-right" style="width:50%; float:right;">',    
+  );
+
+  $form['diesel'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Diesel',
+  );
+
+  $form['transfer_amount'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Transfer Amount',
+  );
+
+  $form['loading_charge'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Loading Charge',
+  );
+  
+  $form['unloading_charge'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Unloading Charge',
+  );
+
+  $form['lr_charges'] = array(
+    '#type' => 'textfield',
+    '#title' => 'LR Charges',
+  );
+
+  $form['labour_charge'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Labour Charge',
+  );
+
+  $form['pod_bal'] = array(
+    '#type' => 'textfield',
+    '#title' => 'POD Bal',
+    '#suffix' => '</div>'
+  );
+
+  $form['submit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Create Memo'),
+  );
+
+  return $form;
+}
+
+function form_create_memo_form_validate($form, &$form_state) {
+  if (($form_state['values']['vendor'] == '')) {
+    form_set_error('vendor', t('Select vendor to create memo'));
+  }
+}
+
+function form_create_memo_form_submit($form, &$form_state) {
+
+    //echo "<pre>"; print_r($form_state);die;
+    $sale_id = $form_state['input']['sale_id'];
+    $lr_number = $form_state['input']['lr_number'];
+    $vendor = $form_state['input']['vendor'];
+    $driver = $form_state['input']['driver'];
+    $contact_no = $form_state['input']['contact_no'];
+    $freight = $form_state['input']['freight'];
+    $loading_detention_charge = $form_state['input']['loading_detention_charge'];
+    $advance = $form_state['input']['advance'];
+    $diesel = $form_state['input']['diesel'];
+    $transfer_amount = $form_state['input']['transfer_amount'];
+    $loading_charge = $form_state['input']['loading_charge'];
+    $unloading_charge = $form_state['input']['unloading_charge'];
+    $lr_charges = $form_state['input']['lr_charges'];
+    $labour_charge = $form_state['input']['labour_charge'];
+    $pod_bal = $form_state['input']['pod_bal'];
+
+    // Get vendor
+    if($vendor) {
+      $vendor_name = db_query("SELECT title from {node} WHERE nid = :nid", array(":nid" => $vendor))->fetchField();
+    }
+
+    // Get Driver
+    if($driver) {
+      $driver_name = db_query("SELECT title from {node} WHERE nid = :nid", array(":nid" => $driver))->fetchField();
+    }
+
+    $node = new stdClass();
+    $node->type = "memo";
+    $node->title = $lr_number;
+    $node->created = time();
+    $node->updated = time();
+    $node->uid = 1;
+    $node->field_memo_sale_id[LANGUAGE_NONE][0]['value'] = $sale_id;
+    $node->field_memo_vendor[LANGUAGE_NONE][0]['value'] = $vendor_name;
+    $node->field_memo_driver[LANGUAGE_NONE][0]['value'] = $driver_name;
+    $node->field_memo_driver_contact_no[LANGUAGE_NONE][0]['value'] = $contact_no;
+    $node->field_memo_freight_amount[LANGUAGE_NONE][0]['value'] = $freight;
+    $node->field_memo_loading_det_charge[LANGUAGE_NONE][0]['value'] = $loading_detention_charge;
+    $node->field_memo_advance[LANGUAGE_NONE][0]['value'] = $advance;
+    $node->field_memo_diesel[LANGUAGE_NONE][0]['value'] = $diesel;
+    $node->field_memo_transfer_amount[LANGUAGE_NONE][0]['value'] = $transfer_amount;
+    $node->field_memo_loading_charge[LANGUAGE_NONE][0]['value'] = $loading_charge;
+    $node->field_memo_unloading_charge[LANGUAGE_NONE][0]['value'] = $unloading_charge;
+    $node->field_memo_lr_charges[LANGUAGE_NONE][0]['value'] = $lr_charges;
+    $node->field_memo_labour_charge[LANGUAGE_NONE][0]['value'] = $labour_charge;
+    $node->field_memo_pod_bal[LANGUAGE_NONE][0]['value'] = $pod_bal;
+
+    node_object_prepare($node);
+    node_save($node);
+
+    drupal_goto('/'.'print-memo/'.$node->nid);
+}
+
+
+function ajax_dropdown_callback($form, &$form_state) {
+  // This will rebuild the $form['select2']
+  return $form['driver'];
+}
+
+function ajax_dropdown_callback_contact($form, &$form_state) {
+  return $form['contact_no'];
+}
+
+function _driver_dropdown_options($key = Null) {
+  $select = db_select('node', 'n');
+  $select->join('field_data_field_vendor', 'vd', 'n.nid = vd.entity_id');
+  $select->fields('n', array(
+    'nid',
+    'title'
+  ));
+  $select->condition('vd.field_vendor_target_id', $key, '=');
+  $results = $select->execute()->fetchAll();
+  
+  $option2 = array();
+  $option2 = array(
+    '' => 'Select Driver'
+  );
+  foreach ($results as $result) {
+    $option2[$result->nid] = $result->title;
+  }  
+  
+  return $option2;
+}
+
+function _driver_contact_no($key = Null) {
+  $select = db_select('field_data_field_contact_no', 'c');
+  $select->fields('c', array(
+    'field_contact_no_value'
+  ));
+  $select->condition('c.entity_id', $key, '=');
+  $results = $select->execute()->fetchAll();
+  
+  $contact_no = array();
+  foreach ($results as $result) {
+    $contact_no = $result->field_contact_no_value;
+  }
+    
+  return $contact_no;
+}
+
+function print_memo() {
+
+  $nid = arg(1);
+
+  if($nid != '') {
+    $memo = node_load($nid);
+
+    $vendor_name = $memo->field_memo_vendor[LANGUAGE_NONE][0]['value'];
+    $driver_name = $memo->field_memo_driver[LANGUAGE_NONE][0]['value'];
+    $contact_no = $memo->field_memo_driver_contact_no[LANGUAGE_NONE][0]['value'];
+    $freight = $memo->field_memo_freight_amount[LANGUAGE_NONE][0]['value'];
+    $loading_detention_charge = $memo->field_memo_loading_det_charge[LANGUAGE_NONE][0]['value'];
+    $advance = $memo->field_memo_advance[LANGUAGE_NONE][0]['value'];
+    $diesel = $memo->field_memo_diesel[LANGUAGE_NONE][0]['value'];
+    $transfer_amount = $memo->field_memo_transfer_amount[LANGUAGE_NONE][0]['value'];
+    $loading_charge = $memo->field_memo_loading_charge[LANGUAGE_NONE][0]['value'];
+    $unloading_charge = $memo->field_memo_unloading_charge[LANGUAGE_NONE][0]['value'];
+    $lr_charges = $memo->field_memo_lr_charges[LANGUAGE_NONE][0]['value'];
+    $labour_charge = $memo->field_memo_labour_charge[LANGUAGE_NONE][0]['value'];
+    $pod_bal = $memo->field_memo_pod_bal[LANGUAGE_NONE][0]['value'];
+
+    $date = $memo->created;
+
+    echo "<pre>"; print_r($memo);die;
+
+    $table_data = '
+    <fieldset>
+        <legend><strong>Memo</strong></legend>
+        <table>
+          <tr>
+            <td width="50%"><strong>Transport:</strong> '.$vendor_name.'</td>
+            <td width="50%"><strong>Freight:</strong> '.$freight.'</td>  
+          </tr>
+
+          <tr>
+            <td width="50%"><strong>Mobile No:</strong> '.$contact_no->name.'</td>
+            <td width="50%"><strong>Advance:</strong> '.$advance.'</td>          
+          </tr> 
+
+          <tr>
+            <td width="50%"><strong>Memo:</strong> '.$memo->title.'</td>
+            <td width="50%"><strong>Memo Date:</strong> '.date("Y-m-d", $date).'</td>
+          </tr>
+               
+          <tr>
+            <td width="50%"><strong>Loading Detention Charges:</strong> '.$loading_detention_charge.'</td>
+            <td width="50%"><strong>Freight:</strong> '.$freight.'</td>          
+          </tr>                
+          <tr>
+            <td width="50%"><strong>Driver Contact No:</strong> '.$contact_no->name.'</td>
+            <td width="50%"><strong>Freight:</strong> '.$freight.'</td>          
+          </tr>                
+          <tr>
+            <td width="50%"><strong>Driver Contact No:</strong> '.$contact_no->name.'</td>
+            <td width="50%"><strong>Freight:</strong> '.$freight.'</td>          
+          </tr>                
+          <tr>
+            <td width="50%"><strong>Driver Contact No:</strong> '.$contact_no->name.'</td>
+            <td width="50%"><strong>Freight:</strong> '.$freight.'</td>          
+          </tr>                
+          <tr>
+            <td width="50%"><strong>Driver Contact No:</strong> '.$contact_no->name.'</td>
+            <td width="50%"><strong>Freight:</strong> '.$freight.'</td>          
+          </tr>                
+
+        </table>
+        
+      </fieldset>
+    ';
+  }
+}
